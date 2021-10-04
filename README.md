@@ -30,7 +30,7 @@ To make something an actor, you simply:
 use send::Actor;
 
 #[derive(Actor)]
-pub struct Actor {}
+pub struct MyActor {}
 ```
 
 What this does is register all sub-actors of this actor to be used for broadcasted messages and events.
