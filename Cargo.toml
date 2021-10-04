@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "send",
+    "send-derive"
+]
