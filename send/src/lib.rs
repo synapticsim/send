@@ -53,6 +53,10 @@ where
 
 	/// Get a reference to the root [`Actor`].
 	pub fn get(&self) -> &R { &self.root }
+	
+	/// Get a mutable reference to the root [`Actor`].
+	/// This shouldn't be used very often: prefer sending events instead.
+	pub fn get_mut(&mut self) -> &mut R { &mut self.root }
 }
 
 struct EventVisitor<'a, E, R> {
