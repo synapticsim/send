@@ -84,6 +84,7 @@ struct EventVisitor<'a, E, R> {
 }
 
 impl<E, R> ActorVisitor<E, R> for EventVisitor<'_, E, R> {
+	#[inline(always)]
 	fn visit<A>(&mut self, actor: &mut A)
 	where
 		A: Actor + Receiver<E, R> + EventReceiver<E, R>,

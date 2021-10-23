@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
-use crate::{Actor, ActorVisitor, EventReceiver, Framework, Receiver};
+use crate::{Actor, ActorVisitor, EventReceiver, Receiver};
 
 /// A context that give you access to the [`Framework`] from inside an [`Actor`].
 pub struct Context<'a, S, R> {
@@ -23,6 +23,7 @@ where
 	R: Actor,
 {
 	/// Broadcast a message to all the [`Actor`]s in the [`Framework`].
+	#[inline(always)]
 	pub fn broadcast<T>(&self, _from: &mut S, message: &T) {
 		// SAFETY:
 		// This is safe because `from` was the only `Actor` that had a mutable reference taken to it.
@@ -39,6 +40,7 @@ where
 	/// Send a message to only a specific [`Actor`].
 	///
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
+	#[inline(always)]
 	pub fn send<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
 	where
 		A: Actor + Receiver<T, R> + EventReceiver<T, R>,
@@ -55,6 +57,7 @@ where
 	/// Send a message to a specific [`Actor`] and its sub-[`Actor`]s.
 	///
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
+	#[inline(always)]
 	pub fn send_sub<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
 	where
 		A: Actor + Receiver<T, R> + EventReceiver<T, R>,
@@ -77,6 +80,7 @@ struct MessageVisitor<'a, M, R> {
 }
 
 impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
+	#[inline(always)]
 	fn visit<A>(&mut self, actor: &mut A)
 	where
 		A: Actor + Receiver<M, R> + EventReceiver<M, R>,

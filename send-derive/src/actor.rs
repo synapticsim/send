@@ -26,6 +26,7 @@ pub fn actor_struct(name: Ident, s: DataStruct) -> TokenStream {
 
 	quote! {
 		impl send::Actor for #name {
+			#[inline]
 			fn accept<T, R>(&mut self, visitor: &mut impl send::ActorVisitor<T, R>) {
 				visitor.visit(self);
 
@@ -73,6 +74,7 @@ pub fn actor_enum(name: Ident, e: DataEnum) -> TokenStream {
 
 	quote! {
 		impl send::Actor for #name {
+			#[inline]
 			fn accept<T, R>(&mut self, visitor: &mut impl send::ActorVisitor<T, R>) {
 				match self {
 					#(#variants)*

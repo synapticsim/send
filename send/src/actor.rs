@@ -36,32 +36,33 @@ pub trait EventReceiver<T, R>: Sized {
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior while deriving.
 impl<T> Actor for T {
+	#[inline(always)]
 	default fn accept<V, R>(&mut self, _visitor: &mut impl ActorVisitor<V, R>) {}
 }
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior for custom types.
 impl<M, R, T> Receiver<M, R> for T {
+	#[inline(always)]
 	default fn receive(&mut self, _message: &M, _context: Context<Self, R>) {}
 }
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior for custom types.
 impl<E, R, T> EventReceiver<E, R> for T {
+	#[inline(always)]
 	default fn receive_event(&mut self, _event: &mut E, _context: Context<Self, R>) {}
 }
 
 // Implementations for standard library types.
 
 impl<T> Actor for Option<T> {
-	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
-		if let Some(v) = self.as_mut() {
-			v.accept(visitor);
-		}
-	}
+	#[inline(always)]
+	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.as_mut().map(|v| v.accept(visitor)); }
 }
 
 impl<T, E> Actor for Result<T, E> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		match self.as_mut() {
 			Ok(v) => v.accept(visitor),
@@ -71,10 +72,12 @@ impl<T, E> Actor for Result<T, E> {
 }
 
 impl<T> Actor for Box<T> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.as_mut().accept(visitor); }
 }
 
 impl<T> Actor for [T] {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
 			v.accept(visitor);
@@ -83,6 +86,7 @@ impl<T> Actor for [T] {
 }
 
 impl<T, const N: usize> Actor for [T; N] {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
 			v.accept(visitor);
@@ -91,6 +95,7 @@ impl<T, const N: usize> Actor for [T; N] {
 }
 
 impl<T> Actor for Vec<T> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
 			v.accept(visitor);
@@ -99,6 +104,7 @@ impl<T> Actor for Vec<T> {
 }
 
 impl<T> Actor for VecDeque<T> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
 			v.accept(visitor);
@@ -107,6 +113,7 @@ impl<T> Actor for VecDeque<T> {
 }
 
 impl<T> Actor for LinkedList<T> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
 			v.accept(visitor);
@@ -115,6 +122,7 @@ impl<T> Actor for LinkedList<T> {
 }
 
 impl<K, V> Actor for HashMap<K, V> {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		for v in self {
 			v.1.accept(visitor);
@@ -123,6 +131,7 @@ impl<K, V> Actor for HashMap<K, V> {
 }
 
 impl<K, V> Actor for BTreeMap<K, V> {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		for v in self {
 			v.1.accept(visitor);
@@ -131,14 +140,17 @@ impl<K, V> Actor for BTreeMap<K, V> {
 }
 
 impl<T> Actor for RefCell<T> {
+	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.get_mut().accept(visitor); }
 }
 
 impl<A> Actor for (A,) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) { self.0.accept(visitor); }
 }
 
 impl<A, B> Actor for (A, B) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -146,6 +158,7 @@ impl<A, B> Actor for (A, B) {
 }
 
 impl<A, B, C> Actor for (A, B, C) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -154,6 +167,7 @@ impl<A, B, C> Actor for (A, B, C) {
 }
 
 impl<A, B, C, D> Actor for (A, B, C, D) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -163,6 +177,7 @@ impl<A, B, C, D> Actor for (A, B, C, D) {
 }
 
 impl<A, B, C, D, E> Actor for (A, B, C, D, E) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -173,6 +188,7 @@ impl<A, B, C, D, E> Actor for (A, B, C, D, E) {
 }
 
 impl<A, B, C, D, E, F> Actor for (A, B, C, D, E, F) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -184,6 +200,7 @@ impl<A, B, C, D, E, F> Actor for (A, B, C, D, E, F) {
 }
 
 impl<A, B, C, D, E, F, G> Actor for (A, B, C, D, E, F, G) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
@@ -196,6 +213,7 @@ impl<A, B, C, D, E, F, G> Actor for (A, B, C, D, E, F, G) {
 }
 
 impl<A, B, C, D, E, F, G, H> Actor for (A, B, C, D, E, F, G, H) {
+	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
 		self.1.accept(visitor);
