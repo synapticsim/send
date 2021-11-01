@@ -80,7 +80,7 @@ where
 }
 
 struct MessageVisitor<'a, M, R> {
-	message: &'a M,
+	message: &'a mut M,
 	root: &'a UnsafeCell<R>,
 }
 
@@ -91,6 +91,6 @@ impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 		A: Actor + Receiver<M, R>,
 	{
 		let context = Context::new(self.root);
-		actor.receive(&self.message, context);
+		actor.receive(self.message, context);
 	}
 }

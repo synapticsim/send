@@ -24,7 +24,7 @@ pub trait Actor {
 /// A trait that allows an [`Actor`] to receive a message sent from another [`Actor`].
 pub trait Receiver<T, R>: Sized {
 	/// Receives the message.
-	fn receive(&mut self, message: &T, context: Context<Self, R>);
+	fn receive(&mut self, message: &mut T, context: Context<Self, R>);
 }
 
 // A dummy implementation for all types.
@@ -38,7 +38,7 @@ impl<T> Actor for T {
 // Specialization will be used to override this behavior for custom types.
 impl<M, R, T> Receiver<M, R> for T {
 	#[inline(always)]
-	default fn receive(&mut self, _: &M, _: Context<Self, R>) {}
+	default fn receive(&mut self, _: &mut M, _: Context<Self, R>) {}
 }
 
 // Implementations for standard library types.

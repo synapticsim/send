@@ -24,7 +24,7 @@ where
 {
 	/// Broadcast a message to all the [`Actor`]s in the [`Framework`].
 	#[inline(always)]
-	pub fn broadcast<T>(&self, _from: &mut S, message: &T) {
+	pub fn broadcast<T>(&self, _from: &mut S, message: &mut T) {
 		// SAFETY:
 		// This is safe because `from` was the only `Actor` that had a mutable reference taken to it.
 		// Since we now have a mutable reference to `from`, we can mutate the `Framework`.
@@ -41,7 +41,7 @@ where
 	///
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
 	#[inline(always)]
-	pub fn send<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
+	pub fn send<T, F, A>(&self, _from: &mut S, message: &mut T, getter: F)
 	where
 		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut R) -> &mut A,
@@ -58,7 +58,7 @@ where
 	///
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
 	#[inline(always)]
-	pub fn send_sub<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
+	pub fn send_sub<T, F, A>(&self, _from: &mut S, message: &mut T, getter: F)
 	where
 		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut R) -> &mut A,

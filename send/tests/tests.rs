@@ -18,11 +18,11 @@ struct Increment {
 }
 
 impl Receiver<Increment, MyActor> for MyActor {
-	fn receive(&mut self, event: &Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
+	fn receive(&mut self, event: &mut Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
 }
 
 impl Receiver<Increment, MyActor> for OtherActor {
-	fn receive(&mut self, event: &Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
+	fn receive(&mut self, event: &mut Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
 }
 
 #[test]
