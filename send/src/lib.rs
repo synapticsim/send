@@ -1,4 +1,5 @@
 #![feature(min_specialization)]
+#![warn(clippy::all, clippy::restriction, clippy::pedantic, clippy::nursery, clippy::cargo)]
 
 mod actor;
 mod context;
@@ -27,10 +28,10 @@ where
 		}
 	}
 
-	/// Send an event to every [`Actor`] in the [`Framework`].
-	pub fn send_event<E>(&mut self, event: &mut E) {
-		let mut visitor = EventVisitor {
-			event,
+	/// Send a message to every [`Actor`] in the [`Framework`].
+	pub fn send<M>(&mut self, message: &mut M) {
+		let mut visitor = MessageVisitor {
+			message,
 			root: &self.root,
 		};
 		unsafe {
@@ -38,16 +39,16 @@ where
 		}
 	}
 
-	/// Send an event to only a specific [`Actor`].
+	/// Send a message to only a specific [`Actor`].
 	///
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
-	pub fn send_event_to<E, F, A>(&mut self, event: &mut E, getter: F)
+	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
+	pub fn send_to<M, F, A>(&mut self, message: &mut M, getter: F)
 	where
-		A: Actor + Receiver<E, R> + EventReceiver<E, R>,
+		A: Actor + Receiver<M, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
-		let mut visitor = EventVisitor {
-			event,
+		let mut visitor = MessageVisitor {
+			message,
 			root: &self.root,
 		};
 		unsafe {
@@ -55,16 +56,16 @@ where
 		}
 	}
 
-	/// Send an event to a specific [`Actor`] and its sub-[`Actor`]s.
+	/// Send a message to a specific [`Actor`] and its sub-[`Actor`]s.
 	///
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
-	pub fn send_event_sub<E, F, A>(&mut self, event: &mut E, getter: F)
+	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
+	pub fn send_sub<M, F, A>(&mut self, message: &mut M, getter: F)
 	where
-		A: Actor + Receiver<E, R> + EventReceiver<E, R>,
+		A: Actor + Receiver<M, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
-		let mut visitor = EventVisitor {
-			event,
+		let mut visitor = MessageVisitor {
+			message,
 			root: &self.root,
 		};
 		unsafe { getter(&mut *self.root.get()).accept(&mut visitor) }
@@ -78,18 +79,18 @@ where
 	pub fn get_mut(&mut self) -> &mut R { self.root.get_mut() }
 }
 
-struct EventVisitor<'a, E, R> {
-	event: &'a mut E,
+struct MessageVisitor<'a, M, R> {
+	message: &'a M,
 	root: &'a UnsafeCell<R>,
 }
 
-impl<E, R> ActorVisitor<E, R> for EventVisitor<'_, E, R> {
+impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 	#[inline(always)]
 	fn visit<A>(&mut self, actor: &mut A)
 	where
-		A: Actor + Receiver<E, R> + EventReceiver<E, R>,
+		A: Actor + Receiver<M, R>,
 	{
 		let context = Context::new(self.root);
-		actor.receive_event(self.event, context);
+		actor.receive(&self.message, context);
 	}
 }

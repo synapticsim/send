@@ -10,7 +10,7 @@ pub trait ActorVisitor<T, R> {
 	/// Visit the [`Actor`], doing whatever on it.
 	fn visit<A>(&mut self, actor: &mut A)
 	where
-		A: Actor + Receiver<T, R> + EventReceiver<T, R>;
+		A: Actor + Receiver<T, R>;
 }
 
 /// An [`Actor`] that can contain sub-[`Actor`]s.
@@ -27,31 +27,18 @@ pub trait Receiver<T, R>: Sized {
 	fn receive(&mut self, message: &T, context: Context<Self, R>);
 }
 
-/// A trait that allows an [`Actor`] to receive external events that are triggered on the [`crate::Framework`].
-pub trait EventReceiver<T, R>: Sized {
-	/// Receive the event.
-	fn receive_event(&mut self, event: &mut T, context: Context<Self, R>);
-}
-
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior while deriving.
 impl<T> Actor for T {
 	#[inline(always)]
-	default fn accept<V, R>(&mut self, _visitor: &mut impl ActorVisitor<V, R>) {}
+	default fn accept<V, R>(&mut self, _: &mut impl ActorVisitor<V, R>) {}
 }
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior for custom types.
 impl<M, R, T> Receiver<M, R> for T {
 	#[inline(always)]
-	default fn receive(&mut self, _message: &M, _context: Context<Self, R>) {}
-}
-
-// A dummy implementation for all types.
-// Specialization will be used to override this behavior for custom types.
-impl<E, R, T> EventReceiver<E, R> for T {
-	#[inline(always)]
-	default fn receive_event(&mut self, _event: &mut E, _context: Context<Self, R>) {}
+	default fn receive(&mut self, _: &M, _: Context<Self, R>) {}
 }
 
 // Implementations for standard library types.

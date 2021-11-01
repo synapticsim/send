@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
-use crate::{Actor, ActorVisitor, EventReceiver, Receiver};
+use crate::{Actor, ActorVisitor, MessageVisitor, Receiver};
 
 /// A context that give you access to the [`Framework`] from inside an [`Actor`].
 pub struct Context<'a, S, R> {
@@ -43,7 +43,7 @@ where
 	#[inline(always)]
 	pub fn send<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
 	where
-		A: Actor + Receiver<T, R> + EventReceiver<T, R>,
+		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
 		// SAFETY: Above ^^
@@ -60,7 +60,7 @@ where
 	#[inline(always)]
 	pub fn send_sub<T, F, A>(&self, _from: &mut S, message: &T, getter: F)
 	where
-		A: Actor + Receiver<T, R> + EventReceiver<T, R>,
+		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
 		// SAFETY: Above ^^
@@ -71,21 +71,5 @@ where
 		unsafe {
 			getter(&mut *self.root.get()).accept(&mut visitor);
 		}
-	}
-}
-
-struct MessageVisitor<'a, M, R> {
-	message: &'a M,
-	root: &'a UnsafeCell<R>,
-}
-
-impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
-	#[inline(always)]
-	fn visit<A>(&mut self, actor: &mut A)
-	where
-		A: Actor + Receiver<M, R> + EventReceiver<M, R>,
-	{
-		let context = Context::new(self.root);
-		actor.receive(&self.message, context);
 	}
 }
