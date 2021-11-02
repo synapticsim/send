@@ -1,8 +1,9 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use syn::{DataEnum, DataStruct, Fields};
+use syn::{DataEnum, DataStruct, Fields, Generics};
 
-pub fn actor_struct(name: Ident, s: DataStruct) -> TokenStream {
+pub fn actor_struct(name: Ident, s: DataStruct, generics: Generics) -> TokenStream {
+	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 	let subfields = match s.fields {
 		Fields::Named(fields) => fields
 			.named
@@ -25,7 +26,7 @@ pub fn actor_struct(name: Ident, s: DataStruct) -> TokenStream {
 	};
 
 	quote! {
-		impl send::Actor for #name {
+		impl #impl_generics send::Actor for #name #ty_generics #where_clause {
 			#[inline]
 			fn accept<T, R>(&mut self, visitor: &mut impl send::ActorVisitor<T, R>) {
 				visitor.visit(self);
@@ -36,7 +37,8 @@ pub fn actor_struct(name: Ident, s: DataStruct) -> TokenStream {
 	}
 }
 
-pub fn actor_enum(name: Ident, e: DataEnum) -> TokenStream {
+pub fn actor_enum(name: Ident, e: DataEnum, generics: Generics) -> TokenStream {
+	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 	let variants: Vec<_> = e
 		.variants
 		.into_iter()
@@ -73,7 +75,7 @@ pub fn actor_enum(name: Ident, e: DataEnum) -> TokenStream {
 		.collect();
 
 	quote! {
-		impl send::Actor for #name {
+		impl #impl_generics send::Actor for #name #ty_generics #where_clause {
 			#[inline]
 			fn accept<T, R>(&mut self, visitor: &mut impl send::ActorVisitor<T, R>) {
 				match self {
