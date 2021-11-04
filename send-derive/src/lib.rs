@@ -6,6 +6,8 @@ use proc_macro::{Diagnostic, Level};
 use proc_macro2::TokenStream;
 use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput};
 
+/// Derive the `Actor` trait for the given struct.
+/// This automatically registers all the fields of the `struct` as `Actor`s.
 #[proc_macro_derive(Actor)]
 pub fn actor(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let data = parse_macro_input!(input as DeriveInput);

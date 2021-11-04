@@ -1,45 +1,73 @@
 #![feature(min_specialization)]
 
-use send::{Actor, Context, Framework, Receiver};
+mod external_messages {
+	use send::{Actor, Context, Framework, Receiver};
 
-#[derive(Actor)]
-struct MyActor {
-	value: i16,
-	actor: OtherActor,
-}
+	#[derive(Actor)]
+	struct Root {
+		data: Data,
+		counter: u16,
+		child: Child,
+	}
 
-#[derive(Actor)]
-struct OtherActor {
-	value: i16,
-}
+	#[derive(Actor)]
+	struct Child {
+		counter: u16,
+		child: ChildChild,
+	}
 
-struct Increment {
-	value: i16,
-}
+	#[derive(Actor)]
+	struct ChildChild {
+		counter: u16,
+	}
 
-impl Receiver<Increment, MyActor> for MyActor {
-	fn receive(&mut self, event: &mut Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
-}
+	struct Data {
+		data: u16,
+	}
 
-impl Receiver<Increment, MyActor> for OtherActor {
-	fn receive(&mut self, event: &mut Increment, _context: Context<Self, MyActor>) { self.value += event.value; }
-}
+	struct Increment(u16);
 
-#[test]
-fn events() {
-	let actor = MyActor {
-		value: 0,
-		actor: OtherActor { value: 0 },
-	};
-	let mut framework = Framework::new(actor);
+	impl Receiver<Increment, Root> for Root {
+		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	}
 
-	let mut message = Increment { value: 1 };
+	impl Receiver<Increment, Root> for ChildChild {
+		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	}
 
-	framework.send(&mut message);
-	assert_eq!(framework.get().value, 1);
-	assert_eq!(framework.get().actor.value, 1);
+	impl Receiver<Increment, Root> for Child {
+		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	}
 
-	framework.send_to(&mut message, |actor| &mut actor.actor);
-	assert_eq!(framework.get().value, 1);
-	assert_eq!(framework.get().actor.value, 2);
+	#[test]
+	fn test() {
+		let mut framework = Framework::new(Root {
+			data: Data { data: 1 },
+			counter: 0,
+			child: Child {
+				counter: 0,
+				child: ChildChild { counter: 0 },
+			},
+		});
+
+		framework.send(&mut Increment(1));
+		assert_eq!(framework.get().counter, 1);
+		assert_eq!(framework.get().child.counter, 1);
+		assert_eq!(framework.get().child.child.counter, 1);
+
+		framework.send_sub(&mut Increment(1), |root| &mut root.child);
+		assert_eq!(framework.get().counter, 1);
+		assert_eq!(framework.get().child.counter, 2);
+		assert_eq!(framework.get().child.child.counter, 2);
+
+		framework.send_to(&mut Increment(1), |root| &mut root.child.child);
+		assert_eq!(framework.get().counter, 1);
+		assert_eq!(framework.get().child.counter, 2);
+		assert_eq!(framework.get().child.child.counter, 3);
+
+		framework.send_with(|root| &root.data, |data| Increment(data.data));
+		assert_eq!(framework.get().counter, 2);
+		assert_eq!(framework.get().child.counter, 3);
+		assert_eq!(framework.get().child.child.counter, 4);
+	}
 }

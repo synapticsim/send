@@ -19,7 +19,7 @@ pub struct Framework<R> {
 
 impl<R> Framework<R>
 where
-	R: Actor,
+	R: Actor + 'static,
 {
 	/// Create a [`Framework`] handling a root [`Actor`].
 	pub fn new(root: R) -> Self {
@@ -69,6 +69,61 @@ where
 			root: &self.root,
 		};
 		unsafe { getter(&mut *self.root.get()).accept(&mut visitor) }
+	}
+
+	/// Send a message that contains references to fields or sub-fields.
+	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
+	/// This sends the message to every [`Actor`] in the [`Framework`].
+	///
+	/// `selector`: A function that selects the fields to contain in the message.  
+	/// `creator`: A function that generates the message to send.
+	pub fn send_with<'a, S, F, C, M>(&mut self, selector: S, creator: C)
+	where
+		S: FnOnce(&'a R) -> F,
+		F: 'a,
+		C: FnOnce(F) -> M,
+	{
+		let fields = selector(unsafe { &*self.root.get() });
+		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
+		self.send(&mut creator(fields));
+	}
+
+	/// Send a message that contains references to fields or sub-fields.
+	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
+	/// This sends a message to only a specific [`Actor`].
+	///
+	/// `selector`: A function that selects the fields to contain in the message.  
+	/// `creator`: A function that generates the message to send.  
+	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
+	pub fn send_to_with<'a, S, F, C, M, G, A>(&mut self, selector: S, creator: C, getter: G)
+	where
+		S: FnOnce(&'a R) -> F,
+		F: 'a,
+		C: FnOnce(F) -> M,
+		G: FnOnce(&mut R) -> &mut A,
+	{
+		let fields = selector(unsafe { &*self.root.get() });
+		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
+		self.send_to(&mut creator(fields), getter);
+	}
+
+	/// Send a message that contains references to fields or sub-fields.
+	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
+	/// This sends a message to a specific [`Actor`] and its sub-[`Actor`]s.
+	///
+	/// `selector`: A function that selects the fields to contain in the message.  
+	/// `creator`: A function that generates the message to send.  
+	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
+	pub fn send_sub_with<'a, S, F, C, M, G, A>(&mut self, selector: S, creator: C, getter: G)
+	where
+		S: FnOnce(&'a R) -> F,
+		F: 'a,
+		C: FnOnce(F) -> M,
+		G: FnOnce(&mut R) -> &mut A,
+	{
+		let fields = selector(unsafe { &*self.root.get() });
+		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
+		self.send_sub(&mut creator(fields), getter);
 	}
 
 	/// Get a reference to the root [`Actor`].
