@@ -79,11 +79,11 @@ where
 	/// `creator`: A function that generates the message to send.
 	pub fn send_with<'a, S, F, C, M>(&mut self, selector: S, creator: C)
 	where
-		S: FnOnce(&'a R) -> F,
+		S: FnOnce(&'a mut R) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
 	{
-		let fields = selector(unsafe { &*self.root.get() });
+		let fields = selector(unsafe { &mut *self.root.get() });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send(&mut creator(fields));
 	}
@@ -97,12 +97,12 @@ where
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
 	pub fn send_to_with<'a, S, F, C, M, G, A>(&mut self, selector: S, creator: C, getter: G)
 	where
-		S: FnOnce(&'a R) -> F,
+		S: FnOnce(&'a mut R) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
 		G: FnOnce(&mut R) -> &mut A,
 	{
-		let fields = selector(unsafe { &*self.root.get() });
+		let fields = selector(unsafe { &mut *self.root.get() });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send_to(&mut creator(fields), getter);
 	}
@@ -116,12 +116,12 @@ where
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
 	pub fn send_sub_with<'a, S, F, C, M, G, A>(&mut self, selector: S, creator: C, getter: G)
 	where
-		S: FnOnce(&'a R) -> F,
+		S: FnOnce(&'a mut R) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
 		G: FnOnce(&mut R) -> &mut A,
 	{
-		let fields = selector(unsafe { &*self.root.get() });
+		let fields = selector(unsafe { &mut *self.root.get() });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send_sub(&mut creator(fields), getter);
 	}
