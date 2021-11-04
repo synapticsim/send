@@ -77,7 +77,7 @@ where
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.
-	pub fn send_with<'a, S, F, C, M>(&mut self, selector: S, creator: C)
+	pub fn send_with<'a, S, F, C, M>(&self, selector: S, creator: C)
 	where
 		S: FnOnce(&'a mut R) -> F,
 		F: 'a,

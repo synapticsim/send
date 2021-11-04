@@ -79,7 +79,7 @@ where
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.
-	pub fn broadcast_with<'a, Sel, F, C, M>(&mut self, from: &mut S, selector: Sel, creator: C)
+	pub fn broadcast_with<'a, Sel, F, C, M>(&self, from: &mut S, selector: Sel, creator: C)
 	where
 		Sel: FnOnce(&'a mut R) -> F,
 		F: 'a,
@@ -97,7 +97,7 @@ where
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.  
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
-	pub fn send_with<'a, Sel, F, C, M, G, A>(&mut self, from: &mut S, selector: Sel, creator: C, getter: G)
+	pub fn send_with<'a, Sel, F, C, M, G, A>(&self, from: &mut S, selector: Sel, creator: C, getter: G)
 	where
 		Sel: FnOnce(&'a mut R) -> F,
 		F: 'a,
@@ -116,7 +116,7 @@ where
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.  
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
-	pub fn send_sub_with<'a, Sel, F, C, M, G, A>(&mut self, from: &mut S, selector: Sel, creator: C, getter: G)
+	pub fn send_sub_with<'a, Sel, F, C, M, G, A>(&self, from: &mut S, selector: Sel, creator: C, getter: G)
 	where
 		Sel: FnOnce(&'a mut R) -> F,
 		F: 'a,
