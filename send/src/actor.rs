@@ -71,7 +71,11 @@ impl<T> Actor for Option<T> {
 	fn is_actor() -> bool { T::is_actor() }
 
 	#[inline(always)]
-	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.as_mut().map(|v| v.accept(visitor)); }
+	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
+		if let Some(v) = self.as_mut() {
+			v.accept(visitor)
+		}
+	}
 }
 
 impl<T, E> Actor for Result<T, E> {
