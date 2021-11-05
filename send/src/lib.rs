@@ -155,13 +155,14 @@ impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 /// ## Examples:
 /// A type without generics:
 /// ```
-/// # use crate::receive;
+/// # #![feature(min_specialization)]
+/// # use send::receive;
 ///
 /// struct MyActor;
 /// struct MyMessage;
 ///
 /// receive! {
-/// 	MyMessage => MyActor = |&mut self, _message, _context| {///
+/// 	MyMessage => MyActor = (&mut self, _message, _context) {
 /// 		// Some code here
 /// 	}
 /// }
@@ -169,26 +170,28 @@ impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 ///
 /// With generics:
 /// ```
-/// # use crate::receive;
+/// # #![feature(min_specialization)]
+/// # use send::receive;
 ///
 /// struct MyActor;
 /// struct MyMessage<const Idx: u8>;
 ///
 /// receive! {
-/// 	%(const Idx: u8) MyMessage<Idx> => MyActor = |&mut self, _message, _context| {///
+/// 	%(const Idx: u8) MyMessage<Idx> => MyActor = (&mut self, _message, _context) {
 /// 		// Some code here
 /// 	}
 /// }
 /// ```
 /// or just:
 /// ```
-/// # use crate::receive;
+/// # #![feature(min_specialization)]
+/// # use send::receive;
 ///
 /// struct MyActor;
 /// struct MyMessage<const Idx: u8>;
 ///
 /// receive! {
-/// 	MyMessage<1> => MyActor = |&mut self, _message, _context| {///
+/// 	MyMessage<1> => MyActor = (&mut self, _message, _context) {
 /// 		// Some code here
 /// 	}
 /// }
@@ -197,7 +200,7 @@ impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 /// Note the funky `%(...)` syntax. This is due to declarative macro limitations.
 #[macro_export]
 macro_rules! receive {
-	($(%$generics:tt)? $message_ty:ty => $on:ty = |&mut $self:ident, $message:pat, $context:pat| $code:block) => {
+	($(%$generics:tt)? $message_ty:ty => $on:ty = (&mut $self:ident, $message:pat, $context:pat) $code:block) => {
 		$crate::receive! { $message_ty, $on, $self, $message, $context, $code, $($generics)? }
 	};
 

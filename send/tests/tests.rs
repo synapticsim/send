@@ -28,19 +28,19 @@ mod external_messages {
 	struct Increment(u16);
 
 	receive! {
-		Increment => Root = |&mut self, increment, _| {
+		Increment => Root = (&mut self, increment, _) {
 			self.counter += increment.0
 		}
 	}
 
 	receive! {
-		Increment => Child = |&mut self, message, _| {
+		Increment => Child = (&mut self, message, _) {
 			self.counter += message.0
 		}
 	}
 
 	receive! {
-		Increment => ChildChild = |&mut self, message, _| {
+		Increment => ChildChild = (&mut self, message, _) {
 			self.counter += message.0
 		}
 	}
