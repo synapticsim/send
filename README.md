@@ -22,7 +22,7 @@ send = { git = "https://github.com/Synaptic-Simulations/send", branch = "main" }
 
 ### Actors, Messages, Events
 
-Everything in `send` is an `Actor`. Actors can receive messages and events, send messages,
+Everything in `send` is an `Actor`. Actors can receive messages, send messages,
 and contain sub-actors. Pretty simple.
 
 To make something an actor, you simply:
@@ -33,48 +33,67 @@ use send::Actor;
 pub struct MyActor {}
 ```
 
-What this does is register all sub-actors of this actor to be used for broadcasted messages and events.
-
-Messages are sent between actors, while events are sent externally. 
-Messages and events can be any type, without any special traits needing to be implemented. 
+What this does is register all sub-actors of this actor to be used for broadcasted messages.
+ 
+Messages can be any type, without any special traits needing to be implemented. 
 
 ### Framework
 
 The `Framework` is the 'root' of all Actors. 
-It allows you to send external events to all actors, a specific one, 
-or a specific one and all its sub-actors.
+It allows you to send external messages to all actors, a specific one, 
+or a specific one and all its children.
 
 Creating a `Framework` is done with `Framework::new()` and the root actor:
 ```rs
 let framework: Framework<MyActor> = Framework::new(MyActor {});
 ```
 
-### Receiving messages and events
+### Receiving messages
 
 To receive messages on an actor, simply implement the trait `send::Receiver` for your actor:
 ```rs
-impl Receiver<Message, MyActor> for MyActor {
-    fn receive(&mut self, message: &Message, context: Context<Self, MyActor>) {
+impl<T> Receiver<Message, T> for MyActor {
+    fn receive(&mut self, message: &Message, context: Context<Self, T>) {
         // Do something with `message`
     }
 }
 ```
 
-To receive event on an actor, simply implement the trait `send::EventReceiver` for your actor:
+Over here, `Message` is the type that you send, and `MyActor` is the type of the root actor.
+
+This implements `Receiver` for *all* possible root actors.
+
+Obviously this boilerplate is annoying, so enter macros!
+
+Use the `send::receive` macro to implement `Receiver` for your actor:
 ```rs
-impl EventReceiver<Event, MyActor> for MyActor {
-    fn receive_event(&mut self, event: &Event, context: Context<Self, MyActor>) {
-        // Do something with `event`
+use send::receive;
+
+struct MyActor;
+
+receive! {
+    Message => MyActor = |&mut self, message, context| {
+        // Your code here
     }
 }
 ```
 
-Over here, `Event` and `Message` are the types that you send, 
-and `MyActor` is the type of the root actor.
+It even supports generics (but they're a bit clunky because macros can't really capture generics):
+```rs
+use send::receive;
+
+struct MyMessage<const N: u8>;
+
+recieve! {
+    %(const N: u8) MyMessage<N> => MyActor = |&mut self, message, context| {
+        // Your code here
+    }
+}
+```
 
 ### Sending messages
 
-In `receive` and `receive_event`, `context` allows you to send messages to all actors,
+In `receive` , `context` allows you to send messages to all actors,
 a specific one, or a specific one and its sub-actors. 
 These messages are sent and evaluated immediately.
 

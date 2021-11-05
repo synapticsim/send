@@ -8,6 +8,7 @@ use std::cell::UnsafeCell;
 
 pub use actor::*;
 pub use context::*;
+// pub use send_derive::receive;
 
 /// The root of everything.
 ///
@@ -44,7 +45,6 @@ where
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
 	pub fn send_to<M, F, A>(&mut self, message: &mut M, getter: F)
 	where
-		A: Actor + Receiver<M, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
 		let mut visitor = MessageVisitor {
@@ -61,7 +61,6 @@ where
 	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
 	pub fn send_sub<M, F, A>(&mut self, message: &mut M, getter: F)
 	where
-		A: Actor + Receiver<M, R>,
 		F: FnOnce(&mut R) -> &mut A,
 	{
 		let mut visitor = MessageVisitor {
@@ -83,6 +82,8 @@ where
 		F: 'a,
 		C: FnOnce(F) -> M,
 	{
+		// SAFETY: We are verifying that the selected fields do not respond to any messages, and thus, cannot mutate
+		// themselves while other actors are reading from them
 		let fields = selector(unsafe { &mut *self.root.get() });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send(&mut creator(fields));
@@ -148,4 +149,24 @@ impl<M, R> ActorVisitor<M, R> for MessageVisitor<'_, M, R> {
 		let context = Context::new(self.root);
 		actor.receive(self.message, context);
 	}
+}
+
+#[macro_export]
+macro_rules! receive {
+	($(%$generics:tt)? $message_ty:ty => $on:ty = |&mut $self:ident, $message:pat, $context:pat| $code:block) => {
+		$crate::receive! { $message_ty, $on, $self, $message, $context, $code, $($generics)? }
+	};
+
+	($message_ty:ty, $on:ty, $self:ident, $message:pat, $context:pat, $code:block, $( ( $($generics:tt)* ) )?) => {
+        impl<_RootTy, $($($generics)*)?> $crate::Receiver<$message_ty, _RootTy> for $on {
+            fn receive(&mut $self, $message: &mut $message_ty, $context: $crate::Context<$on, _RootTy>) $code
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! f {
+	($b:block) => {
+		$b
+	};
 }

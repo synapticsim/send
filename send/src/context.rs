@@ -20,7 +20,8 @@ impl<'a, S, R> Context<'a, S, R> {
 
 impl<S, R> Context<'_, S, R>
 where
-	R: Actor + 'static,
+	S: 'static,
+	R: Actor,
 {
 	/// Broadcast a message to all the [`Actor`]s in the [`Framework`](super::Framework).
 	#[inline(always)]
@@ -39,38 +40,37 @@ where
 
 	/// Send a message to only a specific [`Actor`].
 	///
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
+	/// `getter`: A function that takes in `Self` and outputs the [`Actor`] to send the event to.
 	#[inline(always)]
-	pub fn send<T, F, A>(&self, _from: &mut S, message: &mut T, getter: F)
+	pub fn send<T, F, A>(&self, from: &mut S, message: &mut T, getter: F)
 	where
 		A: Actor + Receiver<T, R>,
-		F: FnOnce(&mut R) -> &mut A,
+		F: FnOnce(&mut S) -> &mut A,
 	{
 		// SAFETY: Above ^^
 		let mut visitor = MessageVisitor {
 			message,
 			root: self.root,
 		};
-		unsafe { visitor.visit(getter(&mut *self.root.get())) }
+		visitor.visit(getter(from))
 	}
 
 	/// Send a message to a specific [`Actor`] and its sub-[`Actor`]s.
 	///
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the event to.
+	/// `getter`: A function that takes in `Self` and outputs the [`Actor`] to send the event to.
 	#[inline(always)]
-	pub fn send_sub<T, F, A>(&self, _from: &mut S, message: &mut T, getter: F)
+	pub fn send_sub<T, F, A>(&self, from: &mut S, message: &mut T, getter: F)
 	where
 		A: Actor + Receiver<T, R>,
-		F: FnOnce(&mut R) -> &mut A,
+		F: FnOnce(&mut S) -> &mut A,
 	{
 		// SAFETY: Above ^^
 		let mut visitor = MessageVisitor {
 			message,
 			root: self.root,
 		};
-		unsafe {
-			getter(&mut *self.root.get()).accept(&mut visitor);
-		}
+
+		getter(from).accept(&mut visitor);
 	}
 
 	/// Send a message that contains references to fields or sub-fields.
@@ -79,13 +79,13 @@ where
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.
-	pub fn broadcast_with<'a, Sel, F, C, M>(&self, from: &mut S, selector: Sel, creator: C)
+	pub fn broadcast_with<'a, Sel, F, C, M>(&self, from: &'a mut S, selector: Sel, creator: C)
 	where
-		Sel: FnOnce(&'a mut R) -> F,
+		Sel: FnOnce(&'a mut S) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
 	{
-		let fields = selector(unsafe { &mut *self.root.get() });
+		let fields = selector(unsafe { &mut *(from as *mut S) });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.broadcast(from, &mut creator(fields));
 	}
@@ -96,15 +96,15 @@ where
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.  
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
-	pub fn send_with<'a, Sel, F, C, M, G, A>(&self, from: &mut S, selector: Sel, creator: C, getter: G)
+	/// `getter`: A function that takes in `Self` and outputs the [`Actor`] to send the message to.
+	pub fn send_with<'a, Sel, F, C, M, G, A>(&self, from: &'a mut S, selector: Sel, creator: C, getter: G)
 	where
-		Sel: FnOnce(&'a mut R) -> F,
+		Sel: FnOnce(&'a mut S) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
-		G: FnOnce(&mut R) -> &mut A,
+		G: FnOnce(&mut S) -> &mut A,
 	{
-		let fields = selector(unsafe { &mut *self.root.get() });
+		let fields = selector(unsafe { &mut *(from as *mut S) });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send(from, &mut creator(fields), getter);
 	}
@@ -115,15 +115,15 @@ where
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
 	/// `creator`: A function that generates the message to send.  
-	/// `getter`: A function that takes in the root and outputs the [`Actor`] to send the message to.
-	pub fn send_sub_with<'a, Sel, F, C, M, G, A>(&self, from: &mut S, selector: Sel, creator: C, getter: G)
+	/// `getter`: A function that takes in`Self` and outputs the [`Actor`] to send the message to.
+	pub fn send_sub_with<'a, Sel, F, C, M, G, A>(&self, from: &'a mut S, selector: Sel, creator: C, getter: G)
 	where
-		Sel: FnOnce(&'a mut R) -> F,
+		Sel: FnOnce(&'a mut S) -> F,
 		F: 'a,
 		C: FnOnce(F) -> M,
-		G: FnOnce(&mut R) -> &mut A,
+		G: FnOnce(&mut S) -> &mut A,
 	{
-		let fields = selector(unsafe { &mut *self.root.get() });
+		let fields = selector(unsafe { &mut *(from as *mut S) });
 		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send_sub(from, &mut creator(fields), getter);
 	}

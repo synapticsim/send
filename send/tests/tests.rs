@@ -1,7 +1,7 @@
 #![feature(min_specialization)]
 
 mod external_messages {
-	use send::{Actor, Context, Framework, Receiver};
+	use send::{receive, Actor, Framework};
 
 	#[derive(Actor)]
 	struct Root {
@@ -27,16 +27,22 @@ mod external_messages {
 
 	struct Increment(u16);
 
-	impl Receiver<Increment, Root> for Root {
-		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	receive! {
+		Increment => Root = |&mut self, increment, _| {
+			self.counter += increment.0
+		}
 	}
 
-	impl Receiver<Increment, Root> for ChildChild {
-		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	receive! {
+		Increment => Child = |&mut self, message, _| {
+			self.counter += message.0
+		}
 	}
 
-	impl Receiver<Increment, Root> for Child {
-		fn receive(&mut self, message: &mut Increment, _: Context<Self, Root>) { self.counter += message.0; }
+	receive! {
+		Increment => ChildChild = |&mut self, message, _| {
+			self.counter += message.0
+		}
 	}
 
 	#[test]
