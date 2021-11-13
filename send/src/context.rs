@@ -1,16 +1,15 @@
-use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
-use crate::{Actor, ActorVisitor, MessageVisitor, Receiver};
+use crate::{Actor, ActorVisitor, MessageVisitor, NotActor, Receiver};
 
 /// A context that give you access to the [`Framework`](super::Framework) from inside an [`Actor`].
-pub struct Context<'a, S, R> {
-	root: &'a UnsafeCell<R>,
-	phantom: PhantomData<S>,
+pub struct Context<S, R> {
+	root: *mut R,
+	phantom: PhantomData<*const S>,
 }
 
-impl<'a, S, R> Context<'a, S, R> {
-	pub fn new(root: &'a UnsafeCell<R>) -> Self {
+impl<S, R> Context<S, R> {
+	pub fn new(root: *mut R) -> Self {
 		Self {
 			root,
 			phantom: PhantomData,
@@ -18,7 +17,7 @@ impl<'a, S, R> Context<'a, S, R> {
 	}
 }
 
-impl<S, R> Context<'_, S, R>
+impl<S, R> Context<S, R>
 where
 	S: 'static,
 	R: Actor,
@@ -26,15 +25,15 @@ where
 	/// Broadcast a message to all the [`Actor`]s in the [`Framework`](super::Framework).
 	#[inline(always)]
 	pub fn broadcast<T>(&self, _from: &mut S, message: &mut T) {
-		// SAFETY:
-		// This is safe because `from` was the only `Actor` that had a mutable reference taken to it.
-		// Since we now have a mutable reference to `from`, we can mutate the `Framework`.
 		let mut visitor = MessageVisitor {
 			message,
 			root: self.root,
 		};
+		// SAFETY:
+		// This is safe because `from` was the only `Actor` that had a mutable reference taken to it.
+		// Since we now have a mutable reference to `from`, we can mutate the `Framework`.
 		unsafe {
-			(*self.root.get()).accept(&mut visitor);
+			(*self.root).accept(&mut visitor);
 		}
 	}
 
@@ -47,7 +46,6 @@ where
 		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut S) -> &mut A,
 	{
-		// SAFETY: Above ^^
 		let mut visitor = MessageVisitor {
 			message,
 			root: self.root,
@@ -64,7 +62,6 @@ where
 		A: Actor + Receiver<T, R>,
 		F: FnOnce(&mut S) -> &mut A,
 	{
-		// SAFETY: Above ^^
 		let mut visitor = MessageVisitor {
 			message,
 			root: self.root,
@@ -82,11 +79,10 @@ where
 	pub fn broadcast_with<'a, Sel, F, C, M>(&self, from: &'a mut S, selector: Sel, creator: C)
 	where
 		Sel: FnOnce(&'a mut S) -> F,
-		F: 'a,
+		F: 'a + NotActor,
 		C: FnOnce(F) -> M,
 	{
 		let fields = selector(unsafe { &mut *(from as *mut S) });
-		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.broadcast(from, &mut creator(fields));
 	}
 
@@ -100,12 +96,11 @@ where
 	pub fn send_with<'a, Sel, F, C, M, G, A>(&self, from: &'a mut S, selector: Sel, creator: C, getter: G)
 	where
 		Sel: FnOnce(&'a mut S) -> F,
-		F: 'a,
+		F: 'a + NotActor,
 		C: FnOnce(F) -> M,
 		G: FnOnce(&mut S) -> &mut A,
 	{
 		let fields = selector(unsafe { &mut *(from as *mut S) });
-		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send(from, &mut creator(fields), getter);
 	}
 
@@ -119,12 +114,11 @@ where
 	pub fn send_sub_with<'a, Sel, F, C, M, G, A>(&self, from: &'a mut S, selector: Sel, creator: C, getter: G)
 	where
 		Sel: FnOnce(&'a mut S) -> F,
-		F: 'a,
+		F: 'a + NotActor,
 		C: FnOnce(F) -> M,
 		G: FnOnce(&mut S) -> &mut A,
 	{
 		let fields = selector(unsafe { &mut *(from as *mut S) });
-		debug_assert!(!F::is_actor(), "Tried to use fields that are Actors themselves");
 		self.send_sub(from, &mut creator(fields), getter);
 	}
 }

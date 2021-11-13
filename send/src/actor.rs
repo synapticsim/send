@@ -14,16 +14,23 @@ pub trait ActorVisitor<T, R> {
 }
 
 /// An [`Actor`] that can contain sub-[`Actor`]s.
+/// If [`accept`] is not a no-op, you *must* un-implement [`NotActor`]:
+/// ```
+/// # #![feature(negative_impls)]
+/// # use send::NotActor;
+///
+/// # struct MyActor;
+///
+/// impl !NotActor for MyActor {}
+/// ```
 ///
 /// Use the derive macro instead of implementing this by hand.
-pub trait Actor {
-	/// If this is an [`Actor`] that is not just a dummy implementation.
-	/// This should *always* return `true` if you are implementing it manually.
-	fn is_actor() -> bool { true }
-
+pub unsafe trait Actor {
 	/// Accept an [`ActorVisitor`].
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>);
 }
+
+pub auto trait NotActor {}
 
 /// A trait that allows an [`Actor`] to receive a message sent from another [`Actor`].
 pub trait Receiver<T, R>: Sized {
@@ -33,10 +40,7 @@ pub trait Receiver<T, R>: Sized {
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior while deriving.
-impl<T> Actor for T {
-	#[inline(always)]
-	default fn is_actor() -> bool { false }
-
+unsafe impl<T> Actor for T {
 	#[inline(always)]
 	default fn accept<V, R>(&mut self, _: &mut impl ActorVisitor<V, R>) {}
 }
@@ -50,26 +54,17 @@ impl<M, R, T> Receiver<M, R> for T {
 
 // Implementations for standard library types.
 
-impl<T> Actor for &T {
-	#[inline(always)]
-	default fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for &T {
 	#[inline(always)]
 	default fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.accept(visitor) }
 }
 
-impl<T> Actor for &mut T {
-	#[inline(always)]
-	default fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for &mut T {
 	#[inline(always)]
 	default fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.accept(visitor) }
 }
 
-impl<T> Actor for Option<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for Option<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		if let Some(v) = self.as_mut() {
@@ -78,10 +73,7 @@ impl<T> Actor for Option<T> {
 	}
 }
 
-impl<T, E> Actor for Result<T, E> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() || E::is_actor() }
-
+unsafe impl<T, E> Actor for Result<T, E> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		match self.as_mut() {
@@ -91,18 +83,12 @@ impl<T, E> Actor for Result<T, E> {
 	}
 }
 
-impl<T> Actor for Box<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for Box<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.as_mut().accept(visitor); }
 }
 
-impl<T> Actor for [T] {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for [T] {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
@@ -111,10 +97,7 @@ impl<T> Actor for [T] {
 	}
 }
 
-impl<T, const N: usize> Actor for [T; N] {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T, const N: usize> Actor for [T; N] {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
@@ -123,10 +106,7 @@ impl<T, const N: usize> Actor for [T; N] {
 	}
 }
 
-impl<T> Actor for Vec<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for Vec<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
@@ -135,10 +115,7 @@ impl<T> Actor for Vec<T> {
 	}
 }
 
-impl<T> Actor for VecDeque<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for VecDeque<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
@@ -147,10 +124,7 @@ impl<T> Actor for VecDeque<T> {
 	}
 }
 
-impl<T> Actor for LinkedList<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for LinkedList<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) {
 		for v in self {
@@ -159,10 +133,7 @@ impl<T> Actor for LinkedList<T> {
 	}
 }
 
-impl<K, V> Actor for HashMap<K, V> {
-	#[inline(always)]
-	fn is_actor() -> bool { V::is_actor() }
-
+unsafe impl<K, V> Actor for HashMap<K, V> {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		for v in self {
@@ -171,10 +142,7 @@ impl<K, V> Actor for HashMap<K, V> {
 	}
 }
 
-impl<K, V> Actor for BTreeMap<K, V> {
-	#[inline(always)]
-	fn is_actor() -> bool { V::is_actor() }
-
+unsafe impl<K, V> Actor for BTreeMap<K, V> {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		for v in self {
@@ -183,26 +151,17 @@ impl<K, V> Actor for BTreeMap<K, V> {
 	}
 }
 
-impl<T> Actor for RefCell<T> {
-	#[inline(always)]
-	fn is_actor() -> bool { T::is_actor() }
-
+unsafe impl<T> Actor for RefCell<T> {
 	#[inline(always)]
 	fn accept<V, R>(&mut self, visitor: &mut impl ActorVisitor<V, R>) { self.get_mut().accept(visitor); }
 }
 
-impl<A> Actor for (A,) {
-	#[inline(always)]
-	fn is_actor() -> bool { A::is_actor() }
-
+unsafe impl<A> Actor for (A,) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) { self.0.accept(visitor); }
 }
 
-impl<A, B> Actor for (A, B) {
-	#[inline(always)]
-	fn is_actor() -> bool { A::is_actor() || B::is_actor() }
-
+unsafe impl<A, B> Actor for (A, B) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -210,10 +169,7 @@ impl<A, B> Actor for (A, B) {
 	}
 }
 
-impl<A, B, C> Actor for (A, B, C) {
-	#[inline(always)]
-	fn is_actor() -> bool { A::is_actor() || B::is_actor() || C::is_actor() }
-
+unsafe impl<A, B, C> Actor for (A, B, C) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -222,10 +178,7 @@ impl<A, B, C> Actor for (A, B, C) {
 	}
 }
 
-impl<A, B, C, D> Actor for (A, B, C, D) {
-	#[inline(always)]
-	fn is_actor() -> bool { A::is_actor() || B::is_actor() || C::is_actor() || D::is_actor() }
-
+unsafe impl<A, B, C, D> Actor for (A, B, C, D) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -235,10 +188,7 @@ impl<A, B, C, D> Actor for (A, B, C, D) {
 	}
 }
 
-impl<A, B, C, D, E> Actor for (A, B, C, D, E) {
-	#[inline(always)]
-	fn is_actor() -> bool { A::is_actor() || B::is_actor() || C::is_actor() || D::is_actor() || E::is_actor() }
-
+unsafe impl<A, B, C, D, E> Actor for (A, B, C, D, E) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -249,12 +199,7 @@ impl<A, B, C, D, E> Actor for (A, B, C, D, E) {
 	}
 }
 
-impl<A, B, C, D, E, F> Actor for (A, B, C, D, E, F) {
-	#[inline(always)]
-	fn is_actor() -> bool {
-		A::is_actor() || B::is_actor() || C::is_actor() || D::is_actor() || E::is_actor() || F::is_actor()
-	}
-
+unsafe impl<A, B, C, D, E, F> Actor for (A, B, C, D, E, F) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -266,18 +211,7 @@ impl<A, B, C, D, E, F> Actor for (A, B, C, D, E, F) {
 	}
 }
 
-impl<A, B, C, D, E, F, G> Actor for (A, B, C, D, E, F, G) {
-	#[inline(always)]
-	fn is_actor() -> bool {
-		A::is_actor()
-			|| B::is_actor()
-			|| C::is_actor()
-			|| D::is_actor()
-			|| E::is_actor()
-			|| F::is_actor()
-			|| G::is_actor()
-	}
-
+unsafe impl<A, B, C, D, E, F, G> Actor for (A, B, C, D, E, F, G) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
@@ -290,19 +224,7 @@ impl<A, B, C, D, E, F, G> Actor for (A, B, C, D, E, F, G) {
 	}
 }
 
-impl<A, B, C, D, E, F, G, H> Actor for (A, B, C, D, E, F, G, H) {
-	#[inline(always)]
-	fn is_actor() -> bool {
-		A::is_actor()
-			|| B::is_actor()
-			|| C::is_actor()
-			|| D::is_actor()
-			|| E::is_actor()
-			|| F::is_actor()
-			|| G::is_actor()
-			|| H::is_actor()
-	}
-
+unsafe impl<A, B, C, D, E, F, G, H> Actor for (A, B, C, D, E, F, G, H) {
 	#[inline(always)]
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>) {
 		self.0.accept(visitor);
