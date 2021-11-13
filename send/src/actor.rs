@@ -41,7 +41,7 @@ pub trait Receiver<T, R>: Sized {
 
 pub auto trait NotActor {}
 
-impl<D: Dimension, U: Units<V>, V: Num + Conversion<V>> NotActor for Quantity<D, U, V> {}
+impl<D: Dimension + ?Sized, U: Units<V> + ?Sized, V: Num + Conversion<V> + ?Sized> NotActor for Quantity<D, U, V> {}
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior while deriving.
