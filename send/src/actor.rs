@@ -2,6 +2,9 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, LinkedList, VecDeque};
 
 pub use send_derive::Actor;
+use uom::num::Num;
+use uom::si::{Dimension, Quantity, Units};
+use uom::Conversion;
 
 use crate::Context;
 
@@ -30,13 +33,15 @@ pub unsafe trait Actor {
 	fn accept<T, R>(&mut self, visitor: &mut impl ActorVisitor<T, R>);
 }
 
-pub auto trait NotActor {}
-
 /// A trait that allows an [`Actor`] to receive a message sent from another [`Actor`].
 pub trait Receiver<T, R>: Sized {
 	/// Receives the message.
 	fn receive(&mut self, message: &mut T, context: Context<Self, R>);
 }
+
+pub auto trait NotActor {}
+
+impl<D: Dimension, U: Units<V>, V: Num + Conversion<V>> NotActor for Quantity<D, U, V> {}
 
 // A dummy implementation for all types.
 // Specialization will be used to override this behavior while deriving.
