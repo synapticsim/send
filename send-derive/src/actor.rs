@@ -29,9 +29,9 @@ pub fn actor_struct(name: Ident, s: DataStruct, generics: Generics) -> TokenStre
 		unsafe impl #impl_generics send::Actor for #name #ty_generics #where_clause {
 			#[inline]
 			fn accept<T, R>(&mut self, visitor: &mut impl send::ActorVisitor<T, R>) {
-				visitor.visit(self);
-
 				#(#subfields)*
+								
+				visitor.visit(self);
 			}
 		}
 
