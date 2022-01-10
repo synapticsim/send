@@ -83,6 +83,8 @@ pub fn actor_enum(name: Ident, e: DataEnum, generics: Generics) -> TokenStream {
 				match self {
 					#(#variants)*
 				}
+				
+				visitor.visit(self);
 			}
 		}
 
