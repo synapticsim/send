@@ -14,6 +14,7 @@ send = { git = "https://github.com/Synaptic-Simulations/send", branch = "main" }
 `send` requires nightly, and you have to add this to the top of your crate:
 ```rs
 #![feature(min_specialization)]
+#![feature(negative_impls)]
 ```
 
 ## Using
