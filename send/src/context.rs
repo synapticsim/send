@@ -71,7 +71,6 @@ where
 	}
 
 	/// Send a message that contains references to fields or sub-fields.
-	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
 	/// This sends the message to every [`Actor`] in the [`Framework`](super::Framework).
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
@@ -87,7 +86,6 @@ where
 	}
 
 	/// Send a message that contains references to fields or sub-fields.
-	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
 	/// This sends a message to only a specific [`Actor`].
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
@@ -105,7 +103,6 @@ where
 	}
 
 	/// Send a message that contains references to fields or sub-fields.
-	/// If the selected fields implement [`Actor`], this will panic in debug mode, and will be UB in release mode.
 	/// This sends a message to a specific [`Actor`] and its sub-[`Actor`]s.
 	///
 	/// `selector`: A function that selects the fields to contain in the message.  
